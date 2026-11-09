@@ -36,11 +36,11 @@ namespace ManySpringsMatModel
             }
             wall2 = new BoxVisualisation(x + distance * (n + 1) + boxWidth * n, y, wallWidth, 80);
             springs = new Spring[n + 1];
-            springs[0] = new Spring(wall1, boxes[0]);
+            springs[0] = new Spring(wall1, boxes[0], initialLength: distance);
             for (int i = 1; i < springs.Length - 1; i++)
                 springs[i] = new Spring(boxes[i - 1], boxes[i], initialLength: distance);
 
-            springs[n] = new Spring(boxes[n - 1], wall2);
+            springs[n] = new Spring(boxes[n - 1], wall2, initialLength: distance);
         }
 
         public double[] GetPos()

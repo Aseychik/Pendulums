@@ -72,6 +72,7 @@ namespace ManySpringsMatModel
         private Pen pen;
         public Graphics grImage;
         public double[]? lastPos;
+        public SolidBrush cBrush;
 
         public FoucautVisualization(double x, double y, double[]? initialPos = null, Color? bgColor = null, Color? lineColor = null, int w = 200, int h = 200)
         {
@@ -84,10 +85,10 @@ namespace ManySpringsMatModel
             this.pen = new Pen(this.lineColor);
             lastPos = initialPos;
             image = new Bitmap(w, h);
-
+            cBrush = new SolidBrush(Color.LightGray);
             grImage = Graphics.FromImage(image);
             grImage.Clear(this.bgColor);
-            grImage.FillEllipse(new SolidBrush(Color.LightGray), 0, 0, w, h);
+            grImage.FillEllipse(cBrush, 0, 0, w, h);
 
 
         }
@@ -97,10 +98,11 @@ namespace ManySpringsMatModel
         public void Restart()
         {
             image.Dispose();
+            grImage.Dispose();
             image = new Bitmap(w, h);
             grImage = Graphics.FromImage(image);
             grImage.Clear(bgColor);
-            grImage.FillEllipse(new SolidBrush(Color.LightGray), 0, 0, w, h);
+            grImage.FillEllipse(cBrush, 0, 0, w, h);
             lastPos = null;
         }
 

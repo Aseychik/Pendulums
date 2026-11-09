@@ -44,7 +44,7 @@
             restartNButton = new Button();
             paramPropertyGrid = new PropertyGrid();
             checkBox1 = new CheckBox();
-            checkBox2 = new CheckBox();
+            setPosCheckBox = new CheckBox();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)nUpDown).BeginInit();
             SuspendLayout();
@@ -101,7 +101,7 @@
             pictureBox1.Size = new Size(1272, 521);
             pictureBox1.TabIndex = 4;
             pictureBox1.TabStop = false;
-            pictureBox1.Click += pictureBox1_Click;
+            pictureBox1.MouseClick += CanvasMClick;
             pictureBox1.Resize += ResizePictureBox;
             // 
             // modelTimer
@@ -151,7 +151,7 @@
             modelsComboBox.Name = "modelsComboBox";
             modelsComboBox.Size = new Size(151, 28);
             modelsComboBox.TabIndex = 9;
-            modelsComboBox.Text = "Foucault Pendulum";
+            modelsComboBox.Text = "N pendulums";
             // 
             // nUpDown
             // 
@@ -194,7 +194,6 @@
             paramPropertyGrid.Size = new Size(245, 386);
             paramPropertyGrid.TabIndex = 14;
             paramPropertyGrid.PropertyValueChanged += ParamChanged;
-            paramPropertyGrid.Click += paramPropertyGrid_Click;
             // 
             // checkBox1
             // 
@@ -207,22 +206,23 @@
             checkBox1.Text = "sprigs as rect";
             checkBox1.UseVisualStyleBackColor = true;
             // 
-            // checkBox2
+            // setPosCheckBox
             // 
-            checkBox2.AutoSize = true;
-            checkBox2.Location = new Point(447, 546);
-            checkBox2.Name = "checkBox2";
-            checkBox2.Size = new Size(101, 24);
-            checkBox2.TabIndex = 16;
-            checkBox2.Text = "checkBox2";
-            checkBox2.UseVisualStyleBackColor = true;
+            setPosCheckBox.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            setPosCheckBox.AutoSize = true;
+            setPosCheckBox.Location = new Point(447, 546);
+            setPosCheckBox.Name = "setPosCheckBox";
+            setPosCheckBox.Size = new Size(108, 24);
+            setPosCheckBox.TabIndex = 16;
+            setPosCheckBox.Text = "set position";
+            setPosCheckBox.UseVisualStyleBackColor = true;
             // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1547, 585);
-            Controls.Add(checkBox2);
+            Controls.Add(setPosCheckBox);
             Controls.Add(checkBox1);
             Controls.Add(paramPropertyGrid);
             Controls.Add(restartNButton);
@@ -263,6 +263,6 @@
         private Button restartNButton;
         private PropertyGrid paramPropertyGrid;
         private CheckBox checkBox1;
-        private CheckBox checkBox2;
+        private CheckBox setPosCheckBox;
     }
 }

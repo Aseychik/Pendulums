@@ -116,9 +116,13 @@ namespace ManySpringsMatModel
         public double[][] EvaluateNArr(int n)
         {
             endEvaluation = false;
-            tempXArr = RungeKutt.EvaluateNArr(n, now, dt, tNow, funcs);
-            endEvaluation = true;
-            return tempXArr;
+            try
+            {
+                tempXArr = RungeKutt.EvaluateNArr(n, now, dt, tNow, funcs);
+                tNow += n * dt;
+                return tempXArr;
+            }
+            finally { endEvaluation = true; }
         }
 
         public void Evaluate()

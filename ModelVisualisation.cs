@@ -128,7 +128,7 @@ namespace ManySpringsMatModel
         Font font;
         SolidBrush brush;
 
-        public BoxVisualisation(double screenX, double screenY, double width, double height, SolidBrush? boxBrush = null, String? name = null, Font? font = null, SolidBrush? brush = null) 
+        public BoxVisualisation(double screenX, double screenY, double width, double height, SolidBrush? boxBrush = null, String? name = null, Font? font = null, SolidBrush? brush = null, double x0 = 0, double y0 = 0) 
         { 
             this.screenX = screenX;
             this.screenY = screenY;
@@ -141,6 +141,8 @@ namespace ManySpringsMatModel
             this.font = font;
             brush ??= new SolidBrush(Color.Black);
             this.brush = brush;
+            x = x0;
+            y = y0;
         }
 
         public float GetDrawX()

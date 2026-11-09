@@ -71,6 +71,41 @@ namespace ManySpringsMatModel
             this.numCount = numCount ?? height / 35;
         }
 
+        public void Reset(int x, int y, int width, int height, int pos = 0, int dx = 1, int paramCount = 1)
+        {
+            fill = 0;
+            this.x = x;
+            this.y = y;
+            
+            foreach (var pen in linePens)
+                pen.Dispose();
+
+            foreach (var brush in brushes)
+                brush.Dispose();
+
+            linePens = new Pen[paramCount];
+            brushes = new SolidBrush[paramCount];
+            for (int i = 0; i < paramCount; i++)
+            {
+                var c = HsvToRgb(360.0 * i / paramCount, 0.75, 0.85);
+                linePens[i] = new Pen(c);
+                brushes[i] = new SolidBrush(c);
+            }
+
+            this.width = width;
+            if (dx < 1) dx = 1;
+            if (dx >= width) dx = width;
+            this.dx = dx;
+            this.height = height;
+            this.pos = pos;
+            this.paramCount = paramCount;
+            this.points = new double[this.paramCount][];
+            for (int i = 0; i < this.paramCount; i++)
+                this.points[i] = new double[(int)(width / dx)];
+
+            this.numCount = height / 35;
+        }
+
         public static Color HsvToRgb(double h, double s, double v)
         {
             h = ((h % 360) + 360) % 360 / 60.0;
@@ -90,7 +125,11 @@ namespace ManySpringsMatModel
         public void AddPoint(double[] x, int shift = 0)
         {
             if (fill < points[0].Length) fill++;
-            pos = (pos + 1) % points[0].Length;
+            if (fill == 1)
+            {
+                min = x[shift];
+                max = x[shift];
+            }
             for (int i = 0; i < paramCount; i++)
             {
                 double t = x[i + shift];
@@ -98,6 +137,7 @@ namespace ManySpringsMatModel
                 min = t < min ? t : min;
                 max = t > max ? t : max;
             }
+            pos = (pos + 1) % points[0].Length;
         }
 
         public void Restart()
@@ -123,28 +163,33 @@ namespace ManySpringsMatModel
                 if (max == min) min -= 0.1;
                 double c = height * 18 / 20 / (max - min);
                 if (c < 0.0001) c = 0.0001;
-                if (c > 1000) c = 1000;
+                if (c > 10000) c = 10000;
 
                 if (drawNumbers)
                 {
                     float dnum = (float)((max - min) / numCount);
 
                     float zeroY = (float)(y + height / 20 + c * max);
-                    g.DrawLine(zeroPen, x, zeroY, x + width, zeroY);
-                    g.DrawString("0", font, brush, x - 10, zeroY - 7);
+                    if (zeroY > y + height / 20 && zeroY < y + height * 19 / 20)
+                    {
+                        g.DrawLine(zeroPen, x, zeroY, x + width, zeroY);
+                        g.DrawString("0", font, brush, x - 10, zeroY - 7);
+                    }
 
                     if (numCount > 0)
                     {
                         double yn = dnum;
                         while (yn < max)
                         {
-                            g.DrawString(string.Format("{0:N2}", yn), font, brush, x - 35, (float)(y + height / 20 + c * (max - yn) - 7));
+                            if (yn > min)
+                                g.DrawString(string.Format("{0:N2}", yn), font, brush, x - 35, (float)(y + height / 20 + c * (max - yn) - 7));
                             yn += dnum;
                         }
                         yn = -dnum;
                         while (yn > min)
                         {
-                            g.DrawString(string.Format("{0:N2}", yn), font, brush, x - 35, (float)(y + height / 20 + c * (max - yn) - 7));
+                            if (yn < max)
+                                g.DrawString(string.Format("{0:N2}", yn), font, brush, x - 35, (float)(y + height / 20 + c * (max - yn) - 7));
                             yn -= dnum;
                         }
                     }

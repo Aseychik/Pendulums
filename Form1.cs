@@ -15,8 +15,8 @@ namespace ManySpringsMatModel
         int speedValue = 1;
         int secondsPeriod = 5;
         bool threadIsActive = true;
-        bool flagSetPos = false;
         GraphDraw[] draws;
+        double k;
 
         public Form1()
         {
@@ -24,23 +24,27 @@ namespace ManySpringsMatModel
 
             waitHandler = new AutoResetEvent(false);
             evaluationThread = new(EvaluateNextForCurrentModel);
+            pictureBox1.Image = new Bitmap(pictureBox1.Width, pictureBox1.Height);
+            g = Graphics.FromImage(pictureBox1.Image);
+
             int n = 5;
             double[] initialPoses = new double[2 * n];
             initialPoses[0] = -0.5;
             initialPoses[n - 1] = 0.3;
-            int w = pictureBox1.Width, wallW = 20;
+            initialPoses[2 * n - 1] = 2;
+            int w = pictureBox1.Image.Width, wallW = 20;
             w -= 20;
             w -= wallW * 2;
-            double k = w / (2.0 * n + 4 * (n + 1));
+            k = w / (2.0 * n + 4 * (n + 1));
 
-            models = [new OneSpringModel([-0.5, 0], new OneSpringVisualize(100, 100)),
+            models = [new OneSpringModel([-1.2, 0], new OneSpringVisualize(100, 100)),
                 new TwoSpringsModel([-0.5, 0, 0, 0], new TwoSpringsVisualize(100, 100)),
                 new NSpringsModel(n, initialPoses, new NSpringsVisualize(n, 10, 100, (int)(k * 4), (int)(k * 2), wallW)),
                 new MathModel([0.2, 0.2, 0.2, -0.1],
                 [new MDXYFunc(0), new MDXYFunc(1), new MDVXFunction(), new MDVYFunction()],
                 new FoucautVisualization(10, 10, bgColor: pictureBox1.BackColor))
             ];
-            currentModel = Models.Foucault;
+            currentModel = Models.NSprings;
             if (currentModel != Models.NSprings)
             {
                 nLabel.Visible = false;
@@ -56,18 +60,18 @@ namespace ManySpringsMatModel
             evaluationThread.Name = "Evaluation thread";
             evaluationThread.Start();
 
-            pictureBox1.Image = new Bitmap(pictureBox1.Width, pictureBox1.Height);
-            g = Graphics.FromImage(pictureBox1.Image);
+
 
             n = UpdateN(n);
 
             int grWidth = n * 40;
-            grWidth = Math.Min(Math.Max(200, grWidth), (pictureBox1.Width - 80 - 100) / 2);
+            grWidth = Math.Min(Math.Max(200, grWidth), (pictureBox1.Image.Width - 80 - 100) / 2);
 
             draws = [new GraphDraw(40, 230, grWidth, 200, paramCount: n), new GraphDraw(40 + grWidth + 100, 230, grWidth, 200, paramCount: n, axisNames: ["v", "t"])];
 
             propGridParams = new MathModelProperties(GetCurrentModel().GetArr0());
             paramPropertyGrid.SelectedObject = propGridParams;
+            pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
         }
 
         public int UpdateN(int n)
@@ -110,16 +114,17 @@ namespace ManySpringsMatModel
                 draws[0].AddPoint(res);
                 draws[1].AddPoint(res, res.Length / 2);
 
-                if (currentModel == Models.OneSpring && res[0] < -1)
+                if (currentModel == Models.OneSpring && res[0] < -1.5)
                 {
                     Model m = GetCurrentModel();
-                    m.Restart([-1], [0], 0, 0.1);
+                    m.Restart([-1.5, 0], 0, 0.1);
                     m.SetPeriod(secondsPeriod, modelTimer.Interval, speedValue);
-                    res[0] = -1;
+                    res[0] = -1.5;
                 }
                 tick++;
                 g.Clear(pictureBox1.BackColor);
-                GetCurrentModel().Draw(g, res, 100, checkBox1.Checked);
+
+                GetCurrentModel().Draw(g, res, currentModel == Models.NSprings ? k : 100, checkBox1.Checked);
                 draws[0].Draw(g);
                 draws[1].Draw(g);
 
@@ -172,44 +177,17 @@ namespace ManySpringsMatModel
             }
         }
 
-        private void setPosButton_Click(object sender, EventArgs e)
+        private Point? ToCanvas(Point client)
         {
-            flagSetPos = true;
-        }
-
-        private void pictureBox1_Click(object sender, EventArgs e)
-        {
-            if (flagSetPos && (currentModel == Models.OneSpring))
-            {
-                modelTimer.Stop();
-                double x = pictureBox1.PointToClient(Cursor.Position).X;
-                Model m = GetCurrentModel();
-                m.Restart([(x - m.GetVisualisation().GetPos()[0] - 200) / 100], [0], 0, 0.1);
-                m.SetPeriod(secondsPeriod, modelTimer.Interval, speedValue);
-                g.Clear(pictureBox1.BackColor);
-                m.Draw(g, [(x - m.GetVisualisation().GetPos()[0] - 200)], 1, checkBox1.Checked);
-                foreach (GraphDraw dr in draws)
-                    dr.Restart();
-                pictureBox1.Invalidate();
-                modelTimer.Start();
-            }
-            if (flagSetPos && (currentModel == Models.Foucault))
-            {
-                modelTimer.Stop();
-                double x = pictureBox1.PointToClient(Cursor.Position).X,
-                    y = pictureBox1.PointToClient(Cursor.Position).Y;
-                Model m = GetCurrentModel();
-                double[] pos = [(x - m.GetVisualisation().GetPos()[0] - 100) / 100, (y - m.GetVisualisation().GetPos()[1] - 100) / 100, 0, 0];
-                m.Restart(pos, 0, 0.001);
-                m.SetPeriod(secondsPeriod, modelTimer.Interval, speedValue);
-                g.Clear(pictureBox1.BackColor);
-                m.Draw(g, pos, 100, checkBox1.Checked);
-                m.GetVisualisation().Restart();
-                foreach (GraphDraw dr in draws)
-                    dr.Restart();
-                pictureBox1.Invalidate();
-                modelTimer.Start();
-            }
+            if (pictureBox1.Image is not { } img) return null;
+            float s = Math.Min((float)pictureBox1.ClientSize.Width / img.Width,
+                               (float)pictureBox1.ClientSize.Height / img.Height);
+            if (s <= 0) return null;
+            float ox = (pictureBox1.ClientSize.Width - img.Width * s) / 2f;
+            float oy = (pictureBox1.ClientSize.Height - img.Height * s) / 2f;
+            int x = (int)Math.Round((client.X - ox) / s);
+            int y = (int)Math.Round((client.Y - oy) / s);
+            return (x >= 0 && y >= 0 && x < img.Width && y < img.Height) ? new Point(x, y) : null;
         }
 
         private void restartNButton_Click(object sender, EventArgs e)
@@ -237,7 +215,7 @@ namespace ManySpringsMatModel
             }
             bool fl = false;
 
-            if (currentModel == Models.NSprings && model == Models.NSprings && (int)nUpDown.Value * 2 != GetCurrentModel().GetArr0().Length)
+            if (currentModel == Models.NSprings && (int)nUpDown.Value * 2 != models[(int)Models.NSprings].GetArr0().Length)
                 fl = true;
 
             currentModel = model ?? Models.NSprings;
@@ -254,10 +232,12 @@ namespace ManySpringsMatModel
                     double[] initialPoses = new double[2 * n];
                     initialPoses[0] = -0.5;
                     initialPoses[n - 1] = 0.3;
-                    int w = pictureBox1.Width, wallW = 20;
+                    initialPoses[2 * n - 1] = 2;
+
+                    int w = pictureBox1.Image.Width, wallW = 20;
                     w -= 20;
                     w -= wallW * 2;
-                    double k = w / (2.0 * n + 4 * (n + 1));
+                    k = w / (2.0 * n + 4 * (n + 1));
                     models[(int)Models.NSprings] = new NSpringsModel(n, initialPoses, new NSpringsVisualize(n, 10, 100, (int)(k * 4), (int)(k * 2), wallW));
                 }
 
@@ -281,17 +261,15 @@ namespace ManySpringsMatModel
             propGridParams.SetEdited(false);
             propGridParams.UpdateParams(m.GetArr0());
             int grWidth = n * 40;
-            grWidth = Math.Min(Math.Max(200, grWidth), (pictureBox1.Width - 40 - 100) / 2);
+            grWidth = Math.Min(Math.Max(200, grWidth), (pictureBox1.Image.Width - 40 - 100) / 2);
 
-            draws = [new GraphDraw(40, 230, grWidth, 200, paramCount: n), new GraphDraw(40 + grWidth + 100, 230, grWidth, 200, paramCount: n, axisNames: ["v", "t"])];
+            int paramCount = m.GetArr0().Length / 2;
+            draws[0].Reset(40, 230, grWidth, 200, paramCount: paramCount);
+            draws[1].Reset(40 + grWidth + 100, 230, grWidth, 200, paramCount: paramCount);
 
             modelTimer.Start();
         }
 
-        private void paramPropertyGrid_Click(object sender, EventArgs e)
-        {
-
-        }
 
         private void ParamChanged(object s, PropertyValueChangedEventArgs e)
         {
@@ -305,6 +283,45 @@ namespace ManySpringsMatModel
             pictureBox1.Image = new Bitmap(pictureBox1.Width, pictureBox1.Height);
 
             g = Graphics.FromImage(pictureBox1.Image);*/
+        }
+
+        private void CanvasMClick(object sender, MouseEventArgs e)
+        {
+            if (!setPosCheckBox.Checked) return;
+
+            if (ToCanvas(e.Location) is not Point p) return;
+
+            if ((currentModel == Models.OneSpring))
+            {
+                modelTimer.Stop();
+                double x = pictureBox1.PointToClient(Cursor.Position).X;
+                Model m = GetCurrentModel();
+                m.Restart([(p.X - m.GetVisualisation().GetPos()[0] - 200) / 100], [0], 0, 0.1);
+                m.SetPeriod(secondsPeriod, modelTimer.Interval, speedValue);
+                g.Clear(pictureBox1.BackColor);
+                m.Draw(g, [(p.X - m.GetVisualisation().GetPos()[0] - 200)], 1, checkBox1.Checked);
+                foreach (GraphDraw dr in draws)
+                    dr.Restart();
+                pictureBox1.Invalidate();
+                modelTimer.Start();
+            }
+            if ((currentModel == Models.Foucault))
+            {
+                modelTimer.Stop();
+                double x = pictureBox1.PointToClient(Cursor.Position).X,
+                    y = pictureBox1.PointToClient(Cursor.Position).Y;
+                Model m = GetCurrentModel();
+                double[] pos = [(p.X - m.GetVisualisation().GetPos()[0] - 100) / 100, (p.Y - m.GetVisualisation().GetPos()[1] - 100) / 100, 0, 0];
+                m.Restart(pos, 0, 0.001);
+                m.SetPeriod(secondsPeriod, modelTimer.Interval, speedValue);
+                g.Clear(pictureBox1.BackColor);
+                m.Draw(g, pos, 100, checkBox1.Checked);
+                m.GetVisualisation().Restart();
+                foreach (GraphDraw dr in draws)
+                    dr.Restart();
+                pictureBox1.Invalidate();
+                modelTimer.Start();
+            }
         }
     }
 }
