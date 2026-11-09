@@ -160,10 +160,9 @@ namespace ManySpringsMatModel
                 for (int i = 0; i < paramCount; i++)
                     last[i] = points[i][pos];
 
-                if (max == min) min -= 0.1;
+                if (max == min) return;
                 double c = height * 18 / 20 / (max - min);
-                if (c < 0.0001) c = 0.0001;
-                if (c > 10000) c = 10000;
+                if (c < 1e-6) c = 1e-6;
 
                 if (drawNumbers)
                 {

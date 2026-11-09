@@ -1,3 +1,4 @@
+using System;
 using System.Windows.Forms;
 
 namespace ManySpringsMatModel
@@ -37,13 +38,42 @@ namespace ManySpringsMatModel
             w -= wallW * 2;
             k = w / (2.0 * n + 4 * (n + 1));
 
-            models = [new OneSpringModel([-1.2, 0], new OneSpringVisualize(100, 100)),
+            /*models = [new OneSpringModel([-1.2, 0], new OneSpringVisualize(100, 100)),
                 new TwoSpringsModel([-0.5, 0, 0, 0], new TwoSpringsVisualize(100, 100)),
                 new NSpringsModel(n, initialPoses, new NSpringsVisualize(n, 10, 100, (int)(k * 4), (int)(k * 2), wallW)),
                 new MathModel([0.2, 0.2, 0.2, -0.1],
                 [new MDXYFunc(0), new MDXYFunc(1), new MDVXFunction(), new MDVYFunction()],
                 new FoucautVisualization(10, 10, bgColor: pictureBox1.BackColor))
+            ];*/
+
+            MDFunction[] funcs = new MDFunction[2 * n];
+
+            funcs[0] = new MDNSpringFuncX(n, 0);
+            funcs[n - 1] = new MDNSpringFuncX(n, n - 1);
+            funcs[n] = new MDNSpringFuncVLeft();
+            funcs[2 * n - 1] = new MDNSpringFuncVRight(n);
+
+            for (int i = 1; i < n - 1; i++)
+            {
+                funcs[i] = new MDNSpringFuncX(n, i);
+                funcs[i + n] = new MDNSpringFuncV(i);
+            }
+
+            models = [new MathModel([-1.2, 0], 
+                [new MDOneSpringFuncX(), new MDOneSpringFuncV(1)], 
+                new OneSpringVisualize(100, 100)),
+
+                new MathModel([-0.5, 0, 0, 0], 
+                [new MDTwoSpringFuncX(0), new MDTwoSpringFuncX(1), new MDTwoSpringFuncV(0), new MDTwoSpringFuncV(1)], 
+                new TwoSpringsVisualize(100, 100)),
+
+                new MathModel(initialPoses, funcs, new NSpringsVisualize(n, 10, 100, (int)(k * 4), (int)(k * 2), wallW)),
+
+                new MathModel([0.2, 0.2, 0.2, -0.1],
+                [new MDXYFunc(0), new MDXYFunc(1), new MDVXFunction(), new MDVYFunction()],
+                new FoucautVisualization(10, 10, bgColor: pictureBox1.BackColor))
             ];
+
             currentModel = Models.NSprings;
             if (currentModel != Models.NSprings)
             {
@@ -215,11 +245,10 @@ namespace ManySpringsMatModel
             }
             bool fl = false;
 
-            if (currentModel == Models.NSprings && (int)nUpDown.Value * 2 != models[(int)Models.NSprings].GetArr0().Length)
-                fl = true;
-
             currentModel = model ?? Models.NSprings;
 
+            if (currentModel == Models.NSprings && (int)nUpDown.Value * 2 != models[(int)Models.NSprings].GetArr0().Length)
+                fl = true;
 
             int n = UpdateN((int)nUpDown.Value);
 
@@ -238,7 +267,21 @@ namespace ManySpringsMatModel
                     w -= 20;
                     w -= wallW * 2;
                     k = w / (2.0 * n + 4 * (n + 1));
-                    models[(int)Models.NSprings] = new NSpringsModel(n, initialPoses, new NSpringsVisualize(n, 10, 100, (int)(k * 4), (int)(k * 2), wallW));
+
+                    MDFunction[] funcs = new MDFunction[2 * n];
+
+                    funcs[0] = new MDNSpringFuncX(n, 0);
+                    funcs[n - 1] = new MDNSpringFuncX(n, n - 1);
+                    funcs[n] = new MDNSpringFuncVLeft();
+                    funcs[2 * n - 1] = new MDNSpringFuncVRight(n);
+
+                    for (int i = 1; i < n - 1; i++)
+                    {
+                        funcs[i] = new MDNSpringFuncX(n, i);
+                        funcs[i + n] = new MDNSpringFuncV(i);
+                    }
+
+                    models[(int)Models.NSprings] = new MathModel(initialPoses, funcs, new NSpringsVisualize(n, 10, 100, (int)(k * 4), (int)(k * 2), wallW));
                 }
 
                 propGridParams = new MathModelProperties(models[(int)currentModel].GetArr0());
@@ -294,7 +337,6 @@ namespace ManySpringsMatModel
             if ((currentModel == Models.OneSpring))
             {
                 modelTimer.Stop();
-                double x = pictureBox1.PointToClient(Cursor.Position).X;
                 Model m = GetCurrentModel();
                 m.Restart([(p.X - m.GetVisualisation().GetPos()[0] - 200) / 100], [0], 0, 0.1);
                 m.SetPeriod(secondsPeriod, modelTimer.Interval, speedValue);
@@ -308,8 +350,6 @@ namespace ManySpringsMatModel
             if ((currentModel == Models.Foucault))
             {
                 modelTimer.Stop();
-                double x = pictureBox1.PointToClient(Cursor.Position).X,
-                    y = pictureBox1.PointToClient(Cursor.Position).Y;
                 Model m = GetCurrentModel();
                 double[] pos = [(p.X - m.GetVisualisation().GetPos()[0] - 100) / 100, (p.Y - m.GetVisualisation().GetPos()[1] - 100) / 100, 0, 0];
                 m.Restart(pos, 0, 0.001);
